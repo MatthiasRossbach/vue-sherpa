@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vue-sherpa - Headless Tour Library for Vue 3</title>
+  <meta name="description" content="A lightweight, headless tour/onboarding library for Vue 3 with bring-your-own-component design">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏔️</text></svg>">
+
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <!-- Styles -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    .hero {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: white;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .hero .subtitle {
+      font-size: 1.25rem;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: white;
+      color: #667eea;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* Features */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      padding: 2rem;
+    }
+
+    .feature-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+      color: #333;
+    }
+
+    .feature-card p {
+      color: #666;
+      font-size: 0.95rem;
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Demo Section */
+    .demo-section {
+      background: white;
+      border-radius: 16px;
+      margin: 2rem;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .demo-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .demo-header h2 {
+      font-size: 2rem;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .demo-header p {
+      color: #666;
+    }
+
+    /* Demo App Layout */
+    .demo-app {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      grid-template-rows: 60px 1fr;
+      gap: 1rem;
+      min-height: 400px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+    }
+
+    .demo-navbar {
+      grid-column: 1 / -1;
+      background: #2d3748;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 2rem;
+    }
+
+    .demo-logo {
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .demo-nav-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .demo-nav-links a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .demo-nav-links a:hover {
+      color: white;
+    }
+
+    .demo-sidebar {
+      background: white;
+      padding: 1.5rem;
+      border-right: 1px solid #e0e0e0;
+    }
+
+    .demo-sidebar h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+      margin-bottom: 1rem;
+    }
+
+    .demo-sidebar ul {
+      list-style: none;
+    }
+
+    .demo-sidebar li {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .demo-sidebar li:hover {
+      background: #f0f0f0;
+    }
+
+    .demo-sidebar li.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .demo-content {
+      padding: 1.5rem;
+    }
+
+    .demo-content h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    .demo-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .demo-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.25rem;
+      border: 1px solid #e0e0e0;
+    }
+
+    .demo-card h4 {
+      font-size: 0.875rem;
+      color: #888;
+      margin-bottom: 0.5rem;
+    }
+
+    .demo-card .value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #333;
+    }
+
+    /* Tour Overlay */
+    .tour-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    .tour-overlay svg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .tour-popover {
+      position: absolute;
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-width: 350px;
+      pointer-events: auto;
+      z-index: 10000;
+    }
+
+    .tour-popover h3 {
+      font-size: 1.125rem;
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+
+    .tour-popover p {
+      color: #666;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .tour-progress {
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .tour-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .tour-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tour-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .tour-btn-skip {
+      background: none;
+      color: #888;
+    }
+
+    .tour-btn-skip:hover {
+      color: #666;
+    }
+
+    .tour-btn-prev {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .tour-btn-prev:hover {
+      background: #e0e0e0;
+    }
+
+    .tour-btn-next {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+
+    .tour-btn-next:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .tour-step-count {
+      text-align: center;
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      color: #999;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* Code Section */
+    .code-section {
+      background: white;
+      border-radius: 16px;
+      margin: 2rem;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .code-section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    .code-block {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .code-block pre {
+      margin: 0;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: #d4d4d4;
+    }
+
+    .code-block .keyword { color: #569cd6; }
+    .code-block .string { color: #ce9178; }
+    .code-block .comment { color: #6a9955; }
+    .code-block .function { color: #dcdcaa; }
+    .code-block .variable { color: #9cdcfe; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .footer a {
+      color: white;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Installation Badges */
+    .install-section {
+      background: white;
+      border-radius: 16px;
+      margin: 2rem;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .install-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .install-tab {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: none;
+      background: #f0f0f0;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .install-tab.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .install-command {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      font-family: monospace;
+      color: #d4d4d4;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Hero Section -->
+    <section class="hero">
+      <h1>🏔️ vue-sherpa</h1>
+      <p class="subtitle">
+        A lightweight, headless tour/onboarding library for Vue 3 with a bring-your-own-component design.
+      </p>
+      <div class="hero-buttons">
+        <button class="btn btn-primary" @click="startTour">
+          ▶️ Start Demo Tour
+        </button>
+        <a href="https://github.com/MatthiasRossbach/vue-sherpa" class="btn btn-secondary" target="_blank">
+          ⭐ GitHub
+        </a>
+        <a href="https://www.npmjs.com/package/vue-sherpa" class="btn btn-secondary" target="_blank">
+          📦 npm
+        </a>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="container">
+      <div class="features">
+        <div class="feature-card" id="feature-headless">
+          <div class="feature-icon">🎨</div>
+          <h3>Headless Architecture</h3>
+          <p>Full control over your UI. Bring your own components or use the included PrimeVue adapter.</p>
+        </div>
+        <div class="feature-card" id="feature-typescript">
+          <div class="feature-icon">📘</div>
+          <h3>TypeScript First</h3>
+          <p>Full type safety and IntelliSense support out of the box.</p>
+        </div>
+        <div class="feature-card" id="feature-lightweight">
+          <div class="feature-icon">⚡</div>
+          <h3>Lightweight</h3>
+          <p>~7KB minified with zero runtime dependencies.</p>
+        </div>
+        <div class="feature-card" id="feature-accessible">
+          <div class="feature-icon">♿</div>
+          <h3>Accessible</h3>
+          <p>Keyboard navigation, focus management, and ARIA support built-in.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo-section">
+      <div class="demo-header">
+        <h2>Interactive Demo</h2>
+        <p>Click "Start Demo Tour" above to see vue-sherpa in action</p>
+      </div>
+
+      <div class="demo-app">
+        <nav class="demo-navbar" id="demo-navbar">
+          <div class="demo-logo">MyApp</div>
+          <div class="demo-nav-links">
+            <a href="#">Dashboard</a>
+            <a href="#">Projects</a>
+            <a href="#">Settings</a>
+          </div>
+        </nav>
+
+        <aside class="demo-sidebar" id="demo-sidebar">
+          <h4>Navigation</h4>
+          <ul>
+            <li class="active">Dashboard</li>
+            <li>Analytics</li>
+            <li>Reports</li>
+            <li>Settings</li>
+          </ul>
+        </aside>
+
+        <main class="demo-content" id="demo-content">
+          <h2>Dashboard Overview</h2>
+          <div class="demo-cards">
+            <div class="demo-card" id="demo-card-1">
+              <h4>Total Users</h4>
+              <div class="value">2,847</div>
+            </div>
+            <div class="demo-card" id="demo-card-2">
+              <h4>Active Sessions</h4>
+              <div class="value">142</div>
+            </div>
+            <div class="demo-card" id="demo-card-3">
+              <h4>Revenue</h4>
+              <div class="value">$12,430</div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <!-- Installation -->
+    <section class="install-section">
+      <h2>Installation</h2>
+      <div class="install-tabs">
+        <button class="install-tab" :class="{ active: pkgManager === 'npm' }" @click="pkgManager = 'npm'">npm</button>
+        <button class="install-tab" :class="{ active: pkgManager === 'pnpm' }" @click="pkgManager = 'pnpm'">pnpm</button>
+        <button class="install-tab" :class="{ active: pkgManager === 'yarn' }" @click="pkgManager = 'yarn'">yarn</button>
+      </div>
+      <div class="install-command">
+        <code>{{ installCommand }}</code>
+        <button class="copy-btn" @click="copyInstall" title="Copy to clipboard">📋</button>
+      </div>
+    </section>
+
+    <!-- Code Example -->
+    <section class="code-section">
+      <h2>Quick Start</h2>
+      <div class="code-block">
+        <pre><span class="comment">// Basic usage with custom UI</span>
+<span class="keyword">import</span> { <span class="variable">useTour</span> } <span class="keyword">from</span> <span class="string">'vue-sherpa'</span>
+
+<span class="keyword">const</span> { <span class="variable">state</span>, <span class="variable">start</span>, <span class="variable">next</span>, <span class="variable">previous</span>, <span class="variable">skip</span> } = <span class="function">useTour</span>({
+  <span class="variable">steps</span>: [
+    {
+      <span class="variable">id</span>: <span class="string">'welcome'</span>,
+      <span class="variable">target</span>: <span class="string">'#header'</span>,
+      <span class="variable">title</span>: <span class="string">'Welcome!'</span>,
+      <span class="variable">content</span>: <span class="string">'Let us show you around.'</span>,
+    },
+    {
+      <span class="variable">id</span>: <span class="string">'sidebar'</span>,
+      <span class="variable">target</span>: <span class="string">'.sidebar'</span>,
+      <span class="variable">title</span>: <span class="string">'Navigation'</span>,
+      <span class="variable">content</span>: <span class="string">'Use the sidebar to navigate.'</span>,
+    },
+  ],
+  <span class="function">onComplete</span>: () => <span class="variable">console</span>.<span class="function">log</span>(<span class="string">'Tour completed!'</span>),
+})</pre>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>
+        MIT Licensed ·
+        <a href="https://github.com/MatthiasRossbach/vue-sherpa">GitHub</a> ·
+        <a href="https://www.npmjs.com/package/vue-sherpa">npm</a>
+      </p>
+      <p style="margin-top: 0.5rem; font-size: 0.875rem; opacity: 0.7;">
+        Overlay technique inspired by <a href="https://driverjs.com/">Driver.js</a>
+      </p>
+    </footer>
+
+    <!-- Tour Overlay -->
+    <div v-if="tourActive" class="tour-overlay">
+      <!-- SVG Overlay with spotlight -->
+      <svg aria-hidden="true">
+        <path :d="overlayPath" fill="rgba(0, 0, 0, 0.5)" fill-rule="evenodd" style="transition: all 0.3s ease-out"></path>
+      </svg>
+
+      <!-- Popover -->
+      <div class="tour-popover" :style="popoverStyle">
+        <h3>{{ currentStep?.title }}</h3>
+        <p>{{ currentStep?.content }}</p>
+        <div class="tour-progress">
+          <div class="tour-progress-bar" :style="{ width: progress + '%' }"></div>
+        </div>
+        <div class="tour-actions">
+          <button class="tour-btn tour-btn-skip" @click="skipTour">Skip</button>
+          <div class="nav-buttons">
+            <button v-if="!isFirstStep" class="tour-btn tour-btn-prev" @click="prevStep">Previous</button>
+            <button class="tour-btn tour-btn-next" @click="nextStep">
+              {{ isLastStep ? 'Finish' : 'Next' }}
+            </button>
+          </div>
+        </div>
+        <div class="tour-step-count">{{ currentStepIndex + 1 }} of {{ steps.length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, watch, onMounted, onUnmounted, nextTick } = Vue
+
+    createApp({
+      setup() {
+        const pkgManager = ref('npm')
+        const tourActive = ref(false)
+        const currentStepIndex = ref(0)
+        const targetRect = ref(null)
+
+        const steps = [
+          {
+            id: 'navbar',
+            target: '#demo-navbar',
+            title: 'Navigation Bar',
+            content: 'This is the main navigation bar where you can access different sections of the app.',
+          },
+          {
+            id: 'sidebar',
+            target: '#demo-sidebar',
+            title: 'Sidebar Menu',
+            content: 'The sidebar provides quick access to different features and pages.',
+          },
+          {
+            id: 'content',
+            target: '#demo-content',
+            title: 'Main Content Area',
+            content: 'This is where the main content of each page is displayed.',
+          },
+          {
+            id: 'metrics',
+            target: '#demo-card-1',
+            title: 'Key Metrics',
+            content: 'Track important metrics like users, sessions, and revenue at a glance.',
+          },
+          {
+            id: 'headless',
+            target: '#feature-headless',
+            title: 'Headless by Design',
+            content: 'vue-sherpa gives you complete control over the UI. This entire tour is custom-built!',
+          },
+        ]
+
+        const currentStep = computed(() => steps[currentStepIndex.value])
+        const isFirstStep = computed(() => currentStepIndex.value === 0)
+        const isLastStep = computed(() => currentStepIndex.value === steps.length - 1)
+        const progress = computed(() => ((currentStepIndex.value + 1) / steps.length) * 100)
+
+        const installCommand = computed(() => {
+          const commands = {
+            npm: 'npm install vue-sherpa',
+            pnpm: 'pnpm add vue-sherpa',
+            yarn: 'yarn add vue-sherpa',
+          }
+          return commands[pkgManager.value]
+        })
+
+        // SVG overlay path calculation
+        const overlayPath = computed(() => {
+          if (!targetRect.value) return ''
+          const { x, y, width, height } = targetRect.value
+          const padding = 8
+          const radius = 4
+
+          const screenW = window.innerWidth
+          const screenH = window.innerHeight
+
+          const left = x - padding
+          const top = y - padding
+          const right = x + width + padding
+          const bottom = y + height + padding
+
+          // Full screen path
+          const fullScreen = `M0,0 L${screenW},0 L${screenW},${screenH} L0,${screenH} Z`
+
+          // Cutout path (rounded rect)
+          const cutout = `M${left + radius},${top}
+            L${right - radius},${top}
+            Q${right},${top} ${right},${top + radius}
+            L${right},${bottom - radius}
+            Q${right},${bottom} ${right - radius},${bottom}
+            L${left + radius},${bottom}
+            Q${left},${bottom} ${left},${bottom - radius}
+            L${left},${top + radius}
+            Q${left},${top} ${left + radius},${top} Z`
+
+          return `${fullScreen} ${cutout}`
+        })
+
+        const popoverStyle = computed(() => {
+          if (!targetRect.value) {
+            return {
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }
+          }
+
+          const { x, y, width, height, bottom } = targetRect.value
+          const popoverWidth = 350
+
+          // Position below the target by default
+          let top = bottom + 16
+          let left = x
+
+          // Keep popover within viewport
+          if (left + popoverWidth > window.innerWidth - 20) {
+            left = window.innerWidth - popoverWidth - 20
+          }
+          if (left < 20) {
+            left = 20
+          }
+
+          // If popover would go below viewport, position above target
+          if (top + 200 > window.innerHeight) {
+            top = y - 200 - 16
+          }
+
+          return {
+            top: `${top}px`,
+            left: `${left}px`,
+          }
+        })
+
+        const updateTargetRect = () => {
+          const step = currentStep.value
+          if (!step) return
+
+          const el = document.querySelector(step.target)
+          if (el) {
+            const rect = el.getBoundingClientRect()
+            targetRect.value = {
+              x: rect.x,
+              y: rect.y,
+              width: rect.width,
+              height: rect.height,
+              bottom: rect.bottom,
+            }
+
+            // Scroll element into view if needed
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }
+
+        const startTour = async () => {
+          currentStepIndex.value = 0
+          tourActive.value = true
+          await nextTick()
+          updateTargetRect()
+        }
+
+        const nextStep = () => {
+          if (isLastStep.value) {
+            tourActive.value = false
+          } else {
+            currentStepIndex.value++
+            updateTargetRect()
+          }
+        }
+
+        const prevStep = () => {
+          if (!isFirstStep.value) {
+            currentStepIndex.value--
+            updateTargetRect()
+          }
+        }
+
+        const skipTour = () => {
+          tourActive.value = false
+        }
+
+        const copyInstall = async () => {
+          try {
+            await navigator.clipboard.writeText(installCommand.value)
+          } catch (e) {
+            console.error('Failed to copy:', e)
+          }
+        }
+
+        // Handle window resize
+        const handleResize = () => {
+          if (tourActive.value) {
+            updateTargetRect()
+          }
+        }
+
+        onMounted(() => {
+          window.addEventListener('resize', handleResize)
+        })
+
+        onUnmounted(() => {
+          window.removeEventListener('resize', handleResize)
+        })
+
+        return {
+          pkgManager,
+          installCommand,
+          tourActive,
+          currentStepIndex,
+          currentStep,
+          steps,
+          isFirstStep,
+          isLastStep,
+          progress,
+          overlayPath,
+          popoverStyle,
+          startTour,
+          nextStep,
+          prevStep,
+          skipTour,
+          copyInstall,
+        }
+      }
+    }).mount('#app')
+  </script>
+</body>
+</html>

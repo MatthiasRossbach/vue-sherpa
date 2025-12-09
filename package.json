@@ -94,13 +94,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourname/vue-sherpa"
+    "url": "https://github.com/MatthiasRossbach/vue-sherpa"
   },
-  "author": "",
+  "author": "Matthias Rossbach",
   "bugs": {
-    "url": "https://github.com/yourname/vue-sherpa/issues"
+    "url": "https://github.com/MatthiasRossbach/vue-sherpa/issues"
   },
-  "homepage": "https://github.com/yourname/vue-sherpa#readme",
+  "homepage": "https://matthiasrossbach.github.io/vue-sherpa/",
   "publishConfig": {
     "access": "public"
   }
