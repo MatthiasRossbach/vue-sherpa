@@ -10,7 +10,7 @@ Headless tour/onboarding library for Vue 3 with a **bring-your-own-component** d
 - **Headless architecture** - Full control over UI rendering
 - **Framework adapters** - Ready-to-use PrimeVue adapter, or build your own
 - **TypeScript first** - Full type safety and IntelliSense support
-- **Lightweight** - ~7KB minified, zero runtime dependencies
+- **Lightweight** - ~4KB minified (core), requires only Vue 3.4+ as peer dependency
 - **Nuxt module** - Auto-imports for Nuxt 3 projects
 - **Keyboard navigation** - Arrow keys, Enter, Escape support
 - **Accessibility** - Focus management and ARIA support
