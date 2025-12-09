@@ -35,7 +35,7 @@ export function useTour(options: TourOptions): UseTourReturn {
     closeOnClickOutside: false,
     closeOnEscape: true,
     scrollToTarget: true,
-    scrollBehavior: 'smooth' as ScrollBehavior,
+    scrollBehavior: 'instant' as ScrollBehavior, // Instant to avoid animation conflict with cutout transition
     highlightPadding: 8,
     overlayOpacity: 0.5,
     zIndex: 9999,

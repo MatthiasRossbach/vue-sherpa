@@ -145,10 +145,17 @@ export function useOverlay(): UseOverlayReturn {
     const { innerWidth: viewportW, innerHeight: viewportH } = window
 
     // Calculate cutout bounds with padding
+    // Clamp to viewport to prevent negative dimensions
     const x = Math.max(0, targetRect.x - padding)
     const y = Math.max(0, targetRect.y - padding)
-    const width = Math.min(targetRect.width + padding * 2, viewportW - x)
-    const height = Math.min(targetRect.height + padding * 2, viewportH - y)
+    const width = Math.max(0, Math.min(targetRect.width + padding * 2, viewportW - x))
+    const height = Math.max(0, Math.min(targetRect.height + padding * 2, viewportH - y))
+
+    // Skip if element is completely outside viewport
+    if (width <= 0 || height <= 0) {
+      path.value = ''
+      return
+    }
 
     path.value = generateOverlayPath(viewportW, viewportH, x, y, width, height, radius)
   }

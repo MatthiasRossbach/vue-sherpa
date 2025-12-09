@@ -1,6 +1,6 @@
 {
   "name": "vue-sherpa",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Headless tour/onboarding library for Vue 3 with bring-your-own-component design",
   "license": "MIT",
   "type": "module",
