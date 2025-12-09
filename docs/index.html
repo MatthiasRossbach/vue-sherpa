@@ -518,7 +518,7 @@
         <div class="feature-card" id="feature-lightweight">
           <div class="feature-icon">⚡</div>
           <h3>Lightweight</h3>
-          <p>~7KB minified with zero runtime dependencies.</p>
+          <p>~4KB minified (core), Vue 3.4+ required.</p>
         </div>
         <div class="feature-card" id="feature-accessible">
           <div class="feature-icon">♿</div>
@@ -786,17 +786,20 @@
 
           const el = document.querySelector(step.target)
           if (el) {
-            const rect = el.getBoundingClientRect()
-            targetRect.value = {
-              x: rect.x,
-              y: rect.y,
-              width: rect.width,
-              height: rect.height,
-              bottom: rect.bottom,
-            }
-
-            // Scroll element into view if needed
+            // First scroll element into view
             el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+            // Wait for scroll to complete, then capture rect
+            setTimeout(() => {
+              const rect = el.getBoundingClientRect()
+              targetRect.value = {
+                x: rect.x,
+                y: rect.y,
+                width: rect.width,
+                height: rect.height,
+                bottom: rect.bottom,
+              }
+            }, 400) // Wait for smooth scroll animation
           }
         }
 
@@ -835,19 +838,35 @@
           }
         }
 
-        // Handle window resize
+        // Handle window resize and scroll
         const handleResize = () => {
           if (tourActive.value) {
-            updateTargetRect()
+            // Immediately update rect on resize/scroll
+            const step = currentStep.value
+            if (step) {
+              const el = document.querySelector(step.target)
+              if (el) {
+                const rect = el.getBoundingClientRect()
+                targetRect.value = {
+                  x: rect.x,
+                  y: rect.y,
+                  width: rect.width,
+                  height: rect.height,
+                  bottom: rect.bottom,
+                }
+              }
+            }
           }
         }
 
         onMounted(() => {
           window.addEventListener('resize', handleResize)
+          window.addEventListener('scroll', handleResize)
         })
 
         onUnmounted(() => {
           window.removeEventListener('resize', handleResize)
+          window.removeEventListener('scroll', handleResize)
         })
 
         return {

@@ -5,6 +5,8 @@ Headless tour/onboarding library for Vue 3 with a **bring-your-own-component** d
 [![npm version](https://img.shields.io/npm/v/vue-sherpa.svg)](https://www.npmjs.com/package/vue-sherpa)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+**[📖 Documentation & Live Demo →](https://matthiasrossbach.github.io/vue-sherpa/)**
+
 ## Features
 
 - **Headless architecture** - Full control over UI rendering
