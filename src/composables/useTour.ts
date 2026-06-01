@@ -1,4 +1,4 @@
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onUnmounted, getCurrentInstance } from 'vue'
 import type {
   TourOptions,
   TourState,
@@ -223,11 +223,13 @@ export function useTour(options: TourOptions): UseTourReturn {
       if (index === -1) return
 
       status.value = 'active'
+      addListeners()
       setStep(index)
       opts.onStart?.()
     },
 
     stop() {
+      removeListeners()
       status.value = 'idle'
       currentStepIndex.value = -1
       targetElement.value = null
@@ -274,6 +276,7 @@ export function useTour(options: TourOptions): UseTourReturn {
     },
 
     skip() {
+      removeListeners()
       status.value = 'idle'
       currentStepIndex.value = -1
       targetElement.value = null
@@ -294,6 +297,7 @@ export function useTour(options: TourOptions): UseTourReturn {
     },
 
     complete() {
+      removeListeners()
       status.value = 'completed'
       currentStepIndex.value = -1
       targetElement.value = null
@@ -342,20 +346,33 @@ export function useTour(options: TourOptions): UseTourReturn {
     }
   }
 
-  // Setup event listeners
-  onMounted(() => {
+  // Global listeners are bound while the tour is ACTIVE (see start/stop), not on
+  // component mount. This keeps keyboard nav, click-outside and — crucially —
+  // the scroll/resize reflow that keeps the highlight glued to its target
+  // working even when the composable is created OUTSIDE a component setup, e.g.
+  // a Nuxt plugin or a module-level singleton, where onMounted silently no-ops.
+  function addListeners() {
+    if (typeof window === 'undefined') return
     window.addEventListener('keydown', handleKeydown)
     window.addEventListener('click', handleClickOutside)
     window.addEventListener('resize', handleResize)
     window.addEventListener('scroll', handleResize, true)
-  })
+  }
 
-  onUnmounted(() => {
+  function removeListeners() {
+    if (typeof window === 'undefined') return
     window.removeEventListener('keydown', handleKeydown)
     window.removeEventListener('click', handleClickOutside)
     window.removeEventListener('resize', handleResize)
     window.removeEventListener('scroll', handleResize, true)
-  })
+  }
+
+  // Clean up if the host component unmounts mid-tour — but only register the
+  // hook when there IS an active instance, so we don't warn in the plugin /
+  // singleton case.
+  if (getCurrentInstance()) {
+    onUnmounted(removeListeners)
+  }
 
   return {
     state,
