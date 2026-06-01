@@ -40,6 +40,16 @@ export interface SherpaNuxtUILabels {
   finish?: string
 }
 
+/** `data-testid` values for each rendered part. */
+export interface SherpaNuxtUITestIds {
+  overlay?: string
+  popover?: string
+  stepCount?: string
+  skip?: string
+  previous?: string
+  next?: string
+}
+
 const DEFAULT_LABELS: Required<SherpaNuxtUILabels> = {
   skip: 'Skip',
   previous: 'Back',
@@ -74,6 +84,14 @@ export const SherpaNuxtUI = defineComponent({
     stepLabel: {
       type: Function as PropType<(current: number, total: number) => string>,
       default: (current: number, total: number) => `${current} / ${total}`,
+    },
+    /**
+     * Optional `data-testid` values applied to each part, so a consuming app can
+     * keep its existing E2E hooks. Omitted parts get no attribute.
+     */
+    testIds: {
+      type: Object as PropType<SherpaNuxtUITestIds>,
+      default: () => ({}),
     },
   },
   setup(props) {
@@ -143,6 +161,7 @@ export const SherpaNuxtUI = defineComponent({
           'div',
           {
             class: 'sherpa-nuxtui-overlay',
+            'data-testid': props.testIds.overlay,
             style: {
               position: 'fixed',
               inset: 0,
@@ -179,6 +198,7 @@ export const SherpaNuxtUI = defineComponent({
               'div',
               {
                 class: ['sherpa-popover', props.popoverClass],
+                'data-testid': props.testIds.popover,
                 role: 'dialog',
                 'aria-label': step.title ?? step.content,
                 style: {
@@ -225,6 +245,7 @@ export const SherpaNuxtUI = defineComponent({
                         'span',
                         {
                           class: 'sherpa-step-count',
+                          'data-testid': props.testIds.stepCount,
                           style: {
                             flexShrink: '0',
                             fontSize: '12px',
@@ -289,6 +310,7 @@ export const SherpaNuxtUI = defineComponent({
                       'button',
                       {
                         type: 'button',
+                        'data-testid': props.testIds.skip,
                         onClick: () => props.controls.skip(),
                         style: {
                           ...btnBase,
@@ -304,6 +326,7 @@ export const SherpaNuxtUI = defineComponent({
                           'button',
                           {
                             type: 'button',
+                            'data-testid': props.testIds.previous,
                             onClick: () => props.controls.previous(),
                             style: {
                               ...btnBase,
@@ -318,6 +341,7 @@ export const SherpaNuxtUI = defineComponent({
                         'button',
                         {
                           type: 'button',
+                          'data-testid': props.testIds.next,
                           onClick: () => props.controls.next(),
                           style: {
                             ...btnBase,

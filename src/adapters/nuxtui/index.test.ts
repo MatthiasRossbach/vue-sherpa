@@ -163,6 +163,31 @@ describe('SherpaNuxtUI', () => {
     wrapper.unmount()
   })
 
+  it('applies passthrough data-testids for E2E hooks', async () => {
+    const wrapper = mount(SherpaNuxtUI, {
+      props: {
+        state: activeState({ currentStepIndex: 0, totalSteps: 2, isFirstStep: true, isLastStep: false }),
+        controls: createMockControls(),
+        options: createMockOptions(),
+        testIds: {
+          overlay: 'sherpa-tour',
+          popover: 'sherpa-popover',
+          stepCount: 'sherpa-step-counter',
+          skip: 'sherpa-skip',
+          next: 'sherpa-next',
+        },
+      },
+      attachTo: document.body,
+    })
+    await nextTick()
+    expect(document.querySelector('[data-testid="sherpa-tour"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="sherpa-popover"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="sherpa-step-counter"]')?.textContent).toBe('1 / 2')
+    expect(document.querySelector('[data-testid="sherpa-skip"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="sherpa-next"]')).toBeTruthy()
+    wrapper.unmount()
+  })
+
   it('hides Back on the first step', async () => {
     const wrapper = mount(SherpaNuxtUI, {
       props: {
