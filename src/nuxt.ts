@@ -18,7 +18,8 @@ export interface ModuleOptions {
   prefix?: string
 }
 
-export default defineNuxtModule<ModuleOptions>({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _module: any = defineNuxtModule<ModuleOptions>({
   meta: {
     name: 'vue-sherpa',
     configKey: 'sherpa',
@@ -45,6 +46,8 @@ export default defineNuxtModule<ModuleOptions>({
     })
   },
 })
+
+export default _module
 
 declare module '@nuxt/schema' {
   interface NuxtConfig {
