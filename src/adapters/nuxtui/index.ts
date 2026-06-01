@@ -1,0 +1,342 @@
+/**
+ * Nuxt UI adapter for vue-sherpa
+ *
+ * A ready-to-use tour overlay styled with Nuxt UI's design tokens. It renders
+ * the SVG spotlight plus a popover whose colors, radius and typography come
+ * entirely from Nuxt UI's CSS variables (`--ui-primary`, `--ui-bg`,
+ * `--ui-text-*`, `--ui-border`, `--ui-radius`, …). That means the tour
+ * automatically follows the consuming app's Nuxt UI theme (primary color,
+ * radius, light/dark mode) with no extra wiring — see the README "Nuxt UI
+ * theming" section.
+ *
+ * There is no hard dependency on `@nuxt/ui`; the adapter only references the
+ * CSS variables that Nuxt UI defines, exactly as the PrimeVue adapter does.
+ *
+ * @example
+ * ```vue
+ * <script setup>
+ * import { useTour } from 'vue-sherpa'
+ * import { SherpaNuxtUI } from 'vue-sherpa/nuxtui'
+ *
+ * const { state, controls, options, start } = useTour({ steps: [...] })
+ * </script>
+ *
+ * <template>
+ *   <SherpaNuxtUI :state="state" :controls="controls" :options="options" />
+ *   <UButton @click="start">Start tour</UButton>
+ * </template>
+ * ```
+ */
+
+import { h, defineComponent, type PropType, Teleport, watch } from 'vue'
+import type { TourState, TourControls, TourOptions } from '../../core/types'
+import { useOverlay } from '../../composables/useOverlay'
+
+/** Button/counter labels — pass translated strings here for i18n. */
+export interface SherpaNuxtUILabels {
+  skip?: string
+  previous?: string
+  next?: string
+  finish?: string
+}
+
+const DEFAULT_LABELS: Required<SherpaNuxtUILabels> = {
+  skip: 'Skip',
+  previous: 'Back',
+  next: 'Next',
+  finish: 'Finish',
+}
+
+export const SherpaNuxtUI = defineComponent({
+  name: 'SherpaNuxtUI',
+  props: {
+    state: { type: Object as PropType<TourState>, required: true },
+    controls: { type: Object as PropType<TourControls>, required: true },
+    options: { type: Object as PropType<TourOptions>, default: () => ({}) },
+    /** Teleport target for the overlay. */
+    teleportTo: { type: String, default: 'body' },
+    /** Render the dimmed SVG spotlight backdrop. */
+    showOverlay: { type: Boolean, default: true },
+    /** Extra class on the popover (e.g. to widen it or tweak spacing). */
+    popoverClass: { type: String, default: '' },
+    /**
+     * Button labels. Provide translated strings for i18n; omitted keys fall
+     * back to English defaults.
+     */
+    labels: {
+      type: Object as PropType<SherpaNuxtUILabels>,
+      default: () => ({}),
+    },
+    /**
+     * Step-counter formatter. Defaults to `"{current} / {total}"`. Override for
+     * i18n, e.g. `(c, t) => t('tour.step', { current: c, total: t })`.
+     */
+    stepLabel: {
+      type: Function as PropType<(current: number, total: number) => string>,
+      default: (current: number, total: number) => `${current} / ${total}`,
+    },
+  },
+  setup(props) {
+    const overlay = useOverlay()
+
+    watch(
+      () => props.state.targetRect,
+      (rect) => {
+        if (props.showOverlay && rect && props.state.status === 'active') {
+          overlay.show(rect, {
+            padding: props.options.highlightPadding ?? 8,
+            radius: 6,
+            opacity: props.options.overlayOpacity ?? 0.5,
+          })
+        } else {
+          overlay.hide()
+        }
+      },
+      { immediate: true }
+    )
+
+    watch(
+      () => props.state.status,
+      (status) => {
+        if (status !== 'active') overlay.hide()
+      }
+    )
+
+    const labels = () => ({ ...DEFAULT_LABELS, ...props.labels })
+
+    // Popover position from the target rect + step placement (top vs bottom).
+    function popoverStyle(): Record<string, string> {
+      const rect = props.state.targetRect
+      if (!rect) {
+        return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+      }
+      const placement = props.state.currentStep?.placement ?? 'bottom'
+      const margin = 12
+      const left = `${Math.max(margin, rect.left)}px`
+      if (placement.startsWith('top')) {
+        return { bottom: `${window.innerHeight - rect.top + margin}px`, left }
+      }
+      return { top: `${rect.bottom + margin}px`, left }
+    }
+
+    const btnBase: Record<string, string> = {
+      font: 'inherit',
+      fontSize: '14px',
+      fontWeight: '600',
+      lineHeight: '1',
+      padding: '8px 14px',
+      borderRadius: 'calc(var(--ui-radius) * 1.5)',
+      cursor: 'pointer',
+      border: '1px solid transparent',
+    }
+
+    return () => {
+      if (props.state.status !== 'active') return null
+      const step = props.state.currentStep
+      if (!step) return null
+      const l = labels()
+
+      return h(
+        Teleport,
+        { to: props.teleportTo },
+        h(
+          'div',
+          {
+            class: 'sherpa-nuxtui-overlay',
+            style: {
+              position: 'fixed',
+              inset: 0,
+              zIndex: String(props.options.zIndex ?? 9999),
+              pointerEvents: 'none',
+            },
+          },
+          [
+            props.showOverlay &&
+              overlay.isVisible.value &&
+              h(
+                'svg',
+                {
+                  class: 'sherpa-overlay-svg',
+                  style: {
+                    position: 'fixed',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                  },
+                  'aria-hidden': 'true',
+                },
+                [
+                  h('path', {
+                    d: overlay.path.value,
+                    fill: `rgba(0, 0, 0, ${props.options.overlayOpacity ?? 0.5})`,
+                    'fill-rule': 'evenodd',
+                    style: { transition: 'all 0.3s ease-out' },
+                  }),
+                ]
+              ),
+            h(
+              'div',
+              {
+                class: ['sherpa-popover', props.popoverClass],
+                role: 'dialog',
+                'aria-label': step.title ?? step.content,
+                style: {
+                  position: 'absolute',
+                  ...popoverStyle(),
+                  width: '360px',
+                  maxWidth: 'calc(100vw - 2rem)',
+                  background: 'var(--ui-bg)',
+                  color: 'var(--ui-text)',
+                  border: '1px solid var(--ui-border)',
+                  borderRadius: 'calc(var(--ui-radius) * 2)',
+                  padding: '16px',
+                  boxShadow: '0 10px 38px -10px rgba(0,0,0,0.35)',
+                  pointerEvents: 'auto',
+                },
+              },
+              [
+                h(
+                  'div',
+                  {
+                    style: {
+                      display: 'flex',
+                      alignItems: 'start',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                    },
+                  },
+                  [
+                    step.title &&
+                      h(
+                        'h3',
+                        {
+                          style: {
+                            margin: '0',
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            color: 'var(--ui-text-highlighted)',
+                          },
+                        },
+                        step.title
+                      ),
+                    props.options.showStepCount &&
+                      h(
+                        'span',
+                        {
+                          class: 'sherpa-step-count',
+                          style: {
+                            flexShrink: '0',
+                            fontSize: '12px',
+                            color: 'var(--ui-text-muted)',
+                          },
+                        },
+                        props.stepLabel(
+                          props.state.currentStepIndex + 1,
+                          props.state.totalSteps
+                        )
+                      ),
+                  ]
+                ),
+                h(
+                  'p',
+                  {
+                    style: {
+                      margin: '8px 0 0',
+                      fontSize: '14px',
+                      lineHeight: '1.5',
+                      color: 'var(--ui-text-muted)',
+                    },
+                  },
+                  step.content
+                ),
+                props.options.showProgress &&
+                  h(
+                    'div',
+                    {
+                      style: {
+                        height: '4px',
+                        background: 'var(--ui-bg-elevated)',
+                        borderRadius: '9999px',
+                        margin: '14px 0 0',
+                        overflow: 'hidden',
+                      },
+                    },
+                    [
+                      h('div', {
+                        style: {
+                          width: `${props.state.progress}%`,
+                          height: '100%',
+                          background: 'var(--ui-primary)',
+                          transition: 'width 0.3s ease',
+                        },
+                      }),
+                    ]
+                  ),
+                h(
+                  'div',
+                  {
+                    style: {
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                      marginTop: '16px',
+                    },
+                  },
+                  [
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        onClick: () => props.controls.skip(),
+                        style: {
+                          ...btnBase,
+                          background: 'transparent',
+                          color: 'var(--ui-text-muted)',
+                        },
+                      },
+                      l.skip
+                    ),
+                    h('div', { style: { display: 'flex', gap: '8px' } }, [
+                      !props.state.isFirstStep &&
+                        h(
+                          'button',
+                          {
+                            type: 'button',
+                            onClick: () => props.controls.previous(),
+                            style: {
+                              ...btnBase,
+                              background: 'var(--ui-bg)',
+                              color: 'var(--ui-text)',
+                              borderColor: 'var(--ui-border-accented)',
+                            },
+                          },
+                          l.previous
+                        ),
+                      h(
+                        'button',
+                        {
+                          type: 'button',
+                          onClick: () => props.controls.next(),
+                          style: {
+                            ...btnBase,
+                            background: 'var(--ui-primary)',
+                            color: 'var(--ui-text-inverted)',
+                          },
+                        },
+                        props.state.isLastStep ? l.finish : l.next
+                      ),
+                    ]),
+                  ]
+                ),
+              ]
+            ),
+          ]
+        )
+      )
+    }
+  },
+})
+
+export default SherpaNuxtUI

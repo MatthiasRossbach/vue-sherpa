@@ -21,6 +21,11 @@
       "import": "./dist/adapters/headless/index.js",
       "require": "./dist/adapters/headless/index.cjs"
     },
+    "./nuxtui": {
+      "types": "./dist/adapters/nuxtui/index.d.ts",
+      "import": "./dist/adapters/nuxtui/index.js",
+      "require": "./dist/adapters/nuxtui/index.cjs"
+    },
     "./nuxt": {
       "types": "./dist/nuxt.d.ts",
       "import": "./dist/nuxt.js",

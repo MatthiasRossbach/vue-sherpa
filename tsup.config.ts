@@ -5,6 +5,7 @@ export default defineConfig({
     index: 'src/index.ts',
     'adapters/primevue/index': 'src/adapters/primevue/index.ts',
     'adapters/headless/index': 'src/adapters/headless/index.ts',
+    'adapters/nuxtui/index': 'src/adapters/nuxtui/index.ts',
     nuxt: 'src/nuxt.ts',
   },
   format: ['esm', 'cjs'],

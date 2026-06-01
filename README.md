@@ -10,7 +10,7 @@ Headless tour/onboarding library for Vue 3 with a **bring-your-own-component** d
 ## Features
 
 - **Headless architecture** - Full control over UI rendering
-- **Framework adapters** - Ready-to-use PrimeVue adapter, or build your own
+- **Framework adapters** - Ready-to-use PrimeVue and Nuxt UI adapters, or build your own
 - **TypeScript first** - Full type safety and IntelliSense support
 - **Lightweight** - ~4KB minified (core), requires only Vue 3.4+ as peer dependency
 - **Nuxt module** - Auto-imports for Nuxt 3 & 4 projects
@@ -256,15 +256,129 @@ import { SherpaPrimeVue } from 'vue-sherpa/primevue'
 />
 ```
 
+#### Nuxt UI Adapter
+
+Pre-built overlay styled with [Nuxt UI](https://ui.nuxt.com)'s design tokens — it
+follows your app's theme (primary color, radius, light/dark) automatically:
+
+```ts
+import { SherpaNuxtUI } from 'vue-sherpa/nuxtui'
+```
+
+```vue
+<SherpaNuxtUI
+  :state="state"
+  :controls="controls"
+  :options="options"
+  :show-overlay="true"
+  popover-class="w-[400px]"
+/>
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `state` / `controls` / `options` | from `useTour()` | required | Tour state + controls |
+| `teleportTo` | `string` | `'body'` | Teleport target for the overlay |
+| `showOverlay` | `boolean` | `true` | Render the dimmed SVG spotlight |
+| `popoverClass` | `string` | `''` | Extra class on the popover |
+| `labels` | `{ skip?, previous?, next?, finish? }` | English | Button labels (pass translations for i18n) |
+| `stepLabel` | `(current, total) => string` | `"{c} / {t}"` | Step-counter formatter |
+
+##### Nuxt UI theming
+
+The adapter has **no hard dependency** on `@nuxt/ui` — it only reads the CSS
+variables Nuxt UI defines, so it inherits your theme with zero extra wiring.
+Set your theme the normal Nuxt UI way and the tour follows it:
+
+```ts
+// app.config.ts
+export default defineAppConfig({
+  ui: {
+    colors: {
+      primary: 'emerald', // the Next/Finish button + progress bar follow this
+      neutral: 'zinc',
+    },
+  },
+})
+```
+
+Tokens consumed by the adapter (override any of them in your CSS to restyle the
+popover): `--ui-primary`, `--ui-bg`, `--ui-bg-elevated`, `--ui-text`,
+`--ui-text-highlighted`, `--ui-text-muted`, `--ui-text-inverted`,
+`--ui-border`, `--ui-border-accented`, `--ui-radius`. Light/dark mode works out
+of the box because Nuxt UI re-points these variables per color mode.
+
+```css
+/* Optional: tune just the tour without touching the rest of your theme */
+.sherpa-popover {
+  --ui-radius: 0.75rem;
+}
+```
+
+##### i18n
+
+Steps are plain data, so drive `title`/`content` straight from your i18n
+helper, and pass translated chrome via `labels` + `stepLabel`:
+
+```vue
+<script setup lang="ts">
+  import { useI18n } from 'vue-i18n' // or @nuxtjs/i18n
+  import { useTour } from 'vue-sherpa'
+  import { SherpaNuxtUI } from 'vue-sherpa/nuxtui'
+
+  const { t } = useI18n()
+
+  const { state, controls, options, start } = useTour({
+    steps: [
+      {
+        id: 'welcome',
+        target: '[data-tour="welcome"]',
+        title: t('tour.welcome.title'),
+        content: t('tour.welcome.content'),
+      },
+    ],
+  })
+</script>
+
+<template>
+  <SherpaNuxtUI
+    :state="state"
+    :controls="controls"
+    :options="options"
+    :labels="{
+      skip: t('tour.skip'),
+      previous: t('tour.back'),
+      next: t('tour.next'),
+      finish: t('tour.finish'),
+    }"
+    :step-label="(c, n) => t('tour.step', { current: c, total: n })"
+  />
+</template>
+```
+
+> Build the `steps` array inside a `computed` (or rebuild it in `start()`) if
+> you need titles/content to react to locale changes after first render.
+
 ## Styling
 
 ### CSS Variables
 
-The PrimeVue adapter respects PrimeVue's CSS variables:
+Each adapter respects its framework's CSS variables, so the tour matches your
+app theme. PrimeVue:
 
 ```css
 :root {
   --p-primary-color: #3b82f6;
+}
+```
+
+Nuxt UI (set via `app.config.ts` → `ui.colors`, or override the variables
+directly — see [Nuxt UI theming](#nuxt-ui-theming)):
+
+```css
+:root {
+  --ui-primary: #10b981;
+  --ui-radius: 0.5rem;
 }
 ```
 
