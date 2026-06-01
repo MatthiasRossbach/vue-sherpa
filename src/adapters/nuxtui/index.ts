@@ -28,7 +28,16 @@
  * ```
  */
 
-import { h, defineComponent, type PropType, Teleport, watch } from 'vue'
+import {
+  h,
+  defineComponent,
+  type PropType,
+  Teleport,
+  watch,
+  ref,
+  onMounted,
+  onUnmounted,
+} from 'vue'
 import type { TourState, TourControls, TourOptions } from '../../core/types'
 import { useOverlay } from '../../composables/useOverlay'
 
@@ -120,6 +129,48 @@ export const SherpaNuxtUI = defineComponent({
       }
     )
 
+    // Animate the cutout when MOVING BETWEEN STEPS, but never while the page
+    // scrolls/resizes — a transition there makes the highlight visibly lag
+    // behind the element. `navigating` is set synchronously on step change so
+    // the scroll events fired by our own scrollIntoView don't disable it.
+    const animateCutout = ref(true)
+    let navigating = false
+    let reflowTimer: ReturnType<typeof setTimeout> | null = null
+    let navTimer: ReturnType<typeof setTimeout> | null = null
+
+    function onReflow() {
+      if (navigating) return
+      animateCutout.value = false
+      if (reflowTimer) clearTimeout(reflowTimer)
+      reflowTimer = setTimeout(() => {
+        animateCutout.value = true
+      }, 150)
+    }
+
+    watch(
+      () => props.state.currentStepIndex,
+      () => {
+        navigating = true
+        animateCutout.value = true
+        if (navTimer) clearTimeout(navTimer)
+        navTimer = setTimeout(() => {
+          navigating = false
+        }, 400)
+      },
+      { flush: 'sync' }
+    )
+
+    onMounted(() => {
+      window.addEventListener('scroll', onReflow, true)
+      window.addEventListener('resize', onReflow)
+    })
+    onUnmounted(() => {
+      window.removeEventListener('scroll', onReflow, true)
+      window.removeEventListener('resize', onReflow)
+      if (reflowTimer) clearTimeout(reflowTimer)
+      if (navTimer) clearTimeout(navTimer)
+    })
+
     const labels = () => ({ ...DEFAULT_LABELS, ...props.labels })
 
     // Popover position from the target rect + step placement (top vs bottom).
@@ -190,7 +241,10 @@ export const SherpaNuxtUI = defineComponent({
                     d: overlay.path.value,
                     fill: `rgba(0, 0, 0, ${props.options.overlayOpacity ?? 0.5})`,
                     'fill-rule': 'evenodd',
-                    style: { transition: 'all 0.3s ease-out' },
+                    style: {
+                      // Morph between steps; track scroll instantly (no lag).
+                      transition: animateCutout.value ? 'd 0.3s ease-out' : 'none',
+                    },
                   }),
                 ]
               ),

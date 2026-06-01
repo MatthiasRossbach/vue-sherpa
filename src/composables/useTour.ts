@@ -133,8 +133,13 @@ export function useTour(options: TourOptions): UseTourReturn {
     return -1
   }
 
-  // Update target element and rect
-  function updateTarget() {
+  // Update target element and rect.
+  //
+  // `allowScrollIntoView` is only set when navigating to a step. On a passing
+  // reflow (window scroll/resize) we just recompute the rect so the highlight
+  // tracks the element — calling scrollIntoView there would fight the user's
+  // scroll, snapping the page back to the target on every wheel tick.
+  function updateTarget(allowScrollIntoView = false) {
     const step = currentStep.value
     if (!step) {
       targetElement.value = null
@@ -148,7 +153,7 @@ export function useTour(options: TourOptions): UseTourReturn {
     if (el) {
       targetRect.value = el.getBoundingClientRect()
 
-      if (opts.scrollToTarget) {
+      if (allowScrollIntoView && opts.scrollToTarget) {
         el.scrollIntoView({
           behavior: opts.scrollBehavior,
           block: 'center',
@@ -182,7 +187,7 @@ export function useTour(options: TourOptions): UseTourReturn {
     }
 
     currentStepIndex.value = index
-    updateTarget()
+    updateTarget(true)
 
     // Call after hide on previous step
     if (prevStep?.onAfterHide) {

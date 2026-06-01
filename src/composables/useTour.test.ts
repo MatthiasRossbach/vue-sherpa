@@ -465,6 +465,37 @@ describe('useTour', () => {
     })
   })
 
+  describe('scroll / resize reflow', () => {
+    it('scrolls into view on navigation but not on a passing scroll/resize', async () => {
+      const spy = vi
+        .spyOn(targetElement, 'scrollIntoView')
+        .mockImplementation(() => {})
+
+      const wrapper = mount(
+        createTestComponent([
+          { id: 'step1', target: '#test-target', content: 'Step 1' },
+        ])
+      )
+
+      wrapper.vm.tour.start()
+      await nextTick()
+      expect(spy).toHaveBeenCalledTimes(1)
+
+      // A user scroll/resize must NOT re-trigger scrollIntoView (that would
+      // snap the page back to the target on every wheel tick).
+      window.dispatchEvent(new Event('scroll'))
+      window.dispatchEvent(new Event('resize'))
+      await nextTick()
+      expect(spy).toHaveBeenCalledTimes(1)
+
+      // …but it should still recompute the rect so the highlight tracks.
+      expect(wrapper.vm.tour.state.targetElement).toBe(targetElement)
+
+      spy.mockRestore()
+      wrapper.unmount()
+    })
+  })
+
   describe('missing-target skipping', () => {
     it('skips leading unresolved steps on start when skipMissingTargets is on', async () => {
       const wrapper = mount(
