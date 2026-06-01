@@ -55,6 +55,14 @@ export interface TourStep {
   allowInteraction?: boolean
   /** Auto-advance after delay (ms) */
   autoAdvance?: number
+  /**
+   * Skip this step when its target can't be resolved in the DOM, instead of
+   * showing a popover anchored to nothing. Useful for steps tied to
+   * conditionally rendered UI. Equivalent to turning on `skipMissingTargets`
+   * for this step only.
+   * @default false
+   */
+  optional?: boolean
 }
 
 /**
@@ -87,6 +95,16 @@ export interface TourOptions {
   closeOnClickOutside?: boolean
   /** Close tour when pressing escape */
   closeOnEscape?: boolean
+  /**
+   * Globally skip any step whose target can't be resolved in the DOM, rather
+   * than rendering a popover anchored to nothing. Resolution is checked at
+   * navigation time (when a step becomes current), so targets that render
+   * asynchronously are not wrongly skipped as long as they exist by the time
+   * the step is reached. Per-step `optional` opts individual steps in without
+   * enabling this globally.
+   * @default false
+   */
+  skipMissingTargets?: boolean
   /** Scroll target element into view */
   scrollToTarget?: boolean
   /** Scroll behavior */

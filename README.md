@@ -13,9 +13,10 @@ Headless tour/onboarding library for Vue 3 with a **bring-your-own-component** d
 - **Framework adapters** - Ready-to-use PrimeVue adapter, or build your own
 - **TypeScript first** - Full type safety and IntelliSense support
 - **Lightweight** - ~4KB minified (core), requires only Vue 3.4+ as peer dependency
-- **Nuxt module** - Auto-imports for Nuxt 3 projects
+- **Nuxt module** - Auto-imports for Nuxt 3 & 4 projects
 - **Keyboard navigation** - Arrow keys, Enter, Escape support
 - **Accessibility** - Focus management and ARIA support
+- **Resilient targeting** - Optionally skip steps whose target isn't in the DOM, so a tour never anchors a popover to nothing
 
 ## Installation
 
@@ -151,6 +152,7 @@ The main composable for managing tour state.
 | `keyboardNavigation` | `boolean` | `true` | Enable arrow keys navigation |
 | `closeOnEscape` | `boolean` | `true` | Close tour on Escape key |
 | `closeOnClickOutside` | `boolean` | `false` | Close when clicking outside |
+| `skipMissingTargets` | `boolean` | `false` | Skip any step whose target can't be resolved in the DOM instead of anchoring a popover to nothing. Checked at navigation time, so async-rendered targets aren't wrongly skipped |
 | `scrollToTarget` | `boolean` | `true` | Auto-scroll to target element |
 | `scrollBehavior` | `ScrollBehavior` | `'smooth'` | Scroll animation style |
 | `highlightPadding` | `number` | `8` | Padding around highlighted element |
@@ -171,10 +173,36 @@ The main composable for managing tour state.
 | `content` | `string` | required | Step description |
 | `placement` | `PopoverPlacement` | `'bottom'` | Popover position |
 | `highlight` | `boolean` | `true` | Highlight target element |
+| `optional` | `boolean` | `false` | Skip this step when its target can't be resolved (per-step opt-in for `skipMissingTargets`) |
 | `allowInteraction` | `boolean` | `false` | Allow clicking target |
 | `autoAdvance` | `number` | - | Auto-advance after ms |
 | `onBeforeShow` | `() => void \| Promise` | - | Before showing step |
 | `onAfterShow` | `() => void` | - | After showing step |
+
+#### Skipping steps with missing targets
+
+By default a step whose `target` can't be found still shows — the popover just
+floats unanchored. For tours that span conditionally rendered UI or multiple
+pages (where some anchors only exist on some screens), enable skipping so those
+steps are quietly passed over instead:
+
+```ts
+useTour({
+  // Globally skip any step whose target isn't in the DOM…
+  skipMissingTargets: true,
+  steps: [
+    { id: 'chart', target: '#portfolio-chart', content: '…' },
+    // …or opt in per step, leaving the global default off:
+    { id: 'promo', target: '#promo-banner', content: '…', optional: true },
+  ],
+})
+```
+
+Resolution is evaluated **at navigation time** (when a step becomes current),
+not all upfront — so a target that renders a moment later isn't wrongly skipped
+as long as it exists by the time the step is reached. `start()` lands on the
+first showable step, `next()`/`previous()` step over unshowable ones, and a
+trailing unshowable step is treated as the end of the tour.
 
 #### Return Value
 

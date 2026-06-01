@@ -41,9 +41,12 @@ const _module: any = defineNuxtModule<ModuleOptions>({
     })
 
     // Add type declarations
-    nuxt.hook('prepare:types', ({ references }) => {
-      references.push({ types: 'vue-sherpa' })
-    })
+    nuxt.hook(
+      'prepare:types',
+      (ctx: { references: { types?: string; path?: string }[] }) => {
+        ctx.references.push({ types: 'vue-sherpa' })
+      }
+    )
   },
 })
 

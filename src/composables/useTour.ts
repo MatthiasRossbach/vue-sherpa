@@ -50,8 +50,20 @@ export function useTour(options: TourOptions): UseTourReturn {
   )
 
   const totalSteps = computed(() => opts.steps.length)
-  const isFirstStep = computed(() => currentStepIndex.value === 0)
-  const isLastStep = computed(() => currentStepIndex.value === opts.steps.length - 1)
+  // First/last are skip-aware: a step counts as "last" when no showable step
+  // follows it, so trailing optional steps with missing targets don't leave the
+  // popover stuck on a non-final step. Resolution is consulted on the client
+  // only; during SSR every step is treated as showable (see canResolve).
+  const isFirstStep = computed(
+    () =>
+      currentStepIndex.value >= 0 &&
+      findShowableIndex(currentStepIndex.value - 1, 'previous') === -1
+  )
+  const isLastStep = computed(
+    () =>
+      currentStepIndex.value >= 0 &&
+      findShowableIndex(currentStepIndex.value + 1, 'next') === -1
+  )
   const progress = computed(() =>
     totalSteps.value > 0 ? ((currentStepIndex.value + 1) / totalSteps.value) * 100 : 0
   )
@@ -92,6 +104,33 @@ export function useTour(options: TourOptions): UseTourReturn {
       return step.target()
     }
     return document.querySelector(step.target)
+  }
+
+  // Whether a step may be skipped when its target can't be resolved.
+  function isSkippable(step: TourStep): boolean {
+    return step.optional === true || opts.skipMissingTargets === true
+  }
+
+  // Whether a step is currently showable. A non-skippable step is always
+  // showable (the orphan-popover fallback is preserved for back-compat). A
+  // skippable step is showable only if its target resolves. During SSR (no
+  // window) every step is treated as showable — resolution happens on the
+  // client once the tour actually runs.
+  function isShowable(step: TourStep): boolean {
+    if (!isSkippable(step)) return true
+    if (typeof window === 'undefined') return true
+    return resolveTarget(step) !== null
+  }
+
+  // Index of the nearest showable step at or beyond `from`, scanning in the
+  // given direction. Returns -1 when no showable step exists that way.
+  function findShowableIndex(from: number, direction: 'next' | 'previous'): number {
+    const delta = direction === 'next' ? 1 : -1
+    for (let i = from; i >= 0 && i < opts.steps.length; i += delta) {
+      const step = opts.steps[i]
+      if (step && isShowable(step)) return i
+    }
+    return -1
   }
 
   // Update target element and rect
@@ -173,8 +212,13 @@ export function useTour(options: TourOptions): UseTourReturn {
     start(stepIndex = 0) {
       if (opts.steps.length === 0) return
 
+      // Land on the first showable step at or after the requested index, so a
+      // tour never opens on a step whose target is missing (when skipping is on).
+      const index = findShowableIndex(stepIndex, 'next')
+      if (index === -1) return
+
       status.value = 'active'
-      setStep(stepIndex)
+      setStep(index)
       opts.onStart?.()
     },
 
@@ -188,16 +232,20 @@ export function useTour(options: TourOptions): UseTourReturn {
     next() {
       if (status.value !== 'active') return
 
-      if (isLastStep.value) {
+      const index = findShowableIndex(currentStepIndex.value + 1, 'next')
+      if (index === -1) {
         controls.complete()
       } else {
-        setStep(currentStepIndex.value + 1, 'next')
+        setStep(index, 'next')
       }
     },
 
     previous() {
-      if (status.value !== 'active' || isFirstStep.value) return
-      setStep(currentStepIndex.value - 1, 'previous')
+      if (status.value !== 'active') return
+
+      const index = findShowableIndex(currentStepIndex.value - 1, 'previous')
+      if (index === -1) return
+      setStep(index, 'previous')
     },
 
     goTo(stepIndexOrId) {
@@ -211,10 +259,13 @@ export function useTour(options: TourOptions): UseTourReturn {
         index = stepIndexOrId
       }
 
-      if (index >= 0 && index < opts.steps.length) {
-        const direction = index > currentStepIndex.value ? 'next' : 'previous'
-        setStep(index, direction)
-      }
+      if (index < 0 || index >= opts.steps.length) return
+      // If the requested step isn't showable, advance past it in the direction
+      // of travel to the nearest showable step.
+      const direction = index > currentStepIndex.value ? 'next' : 'previous'
+      const resolved = findShowableIndex(index, direction)
+      if (resolved === -1) return
+      setStep(resolved, direction)
     },
 
     skip() {

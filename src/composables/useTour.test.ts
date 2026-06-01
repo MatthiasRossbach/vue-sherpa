@@ -464,4 +464,137 @@ describe('useTour', () => {
       expect(wrapper.vm.tour.state.targetRect).toBeNull()
     })
   })
+
+  describe('missing-target skipping', () => {
+    it('skips leading unresolved steps on start when skipMissingTargets is on', async () => {
+      const wrapper = mount(
+        createTestComponent(
+          [
+            { id: 'ghost', target: '#nope', content: 'Ghost' },
+            { id: 'real', target: '#test-target', content: 'Real' },
+          ],
+          { skipMissingTargets: true }
+        )
+      )
+
+      wrapper.vm.tour.start()
+      await nextTick()
+
+      expect(wrapper.vm.tour.state.status).toBe('active')
+      expect(wrapper.vm.tour.state.currentStep?.id).toBe('real')
+    })
+
+    it('skips a middle unresolved step when advancing', async () => {
+      const wrapper = mount(
+        createTestComponent(
+          [
+            { id: 's1', target: '#test-target', content: '1' },
+            { id: 'ghost', target: '#nope', content: 'Ghost' },
+            { id: 's3', target: '#test-target', content: '3' },
+          ],
+          { skipMissingTargets: true }
+        )
+      )
+
+      wrapper.vm.tour.start()
+      await nextTick()
+      expect(wrapper.vm.tour.state.currentStep?.id).toBe('s1')
+
+      wrapper.vm.tour.next()
+      await nextTick()
+      expect(wrapper.vm.tour.state.currentStep?.id).toBe('s3')
+    })
+
+    it('honors per-step optional without enabling skipping globally', async () => {
+      const wrapper = mount(
+        createTestComponent([
+          { id: 's1', target: '#test-target', content: '1' },
+          { id: 'ghost', target: '#nope', content: 'Ghost', optional: true },
+          { id: 's3', target: '#test-target', content: '3' },
+        ])
+      )
+
+      wrapper.vm.tour.start()
+      await nextTick()
+
+      wrapper.vm.tour.next()
+      await nextTick()
+      expect(wrapper.vm.tour.state.currentStep?.id).toBe('s3')
+    })
+
+    it('still shows a non-optional unresolved step (back-compat)', async () => {
+      const wrapper = mount(
+        createTestComponent([
+          { id: 's1', target: '#test-target', content: '1' },
+          { id: 'ghost', target: '#nope', content: 'Ghost' },
+          { id: 's3', target: '#test-target', content: '3' },
+        ])
+      )
+
+      wrapper.vm.tour.start()
+      await nextTick()
+
+      wrapper.vm.tour.next()
+      await nextTick()
+      expect(wrapper.vm.tour.state.currentStep?.id).toBe('ghost')
+      expect(wrapper.vm.tour.state.targetElement).toBeNull()
+    })
+
+    it('treats a trailing optional unresolved step as last and completes', async () => {
+      const onComplete = vi.fn()
+      const wrapper = mount(
+        createTestComponent(
+          [
+            { id: 's1', target: '#test-target', content: '1' },
+            { id: 'ghost', target: '#nope', content: 'Ghost', optional: true },
+          ],
+          { onComplete }
+        )
+      )
+
+      wrapper.vm.tour.start()
+      await nextTick()
+      expect(wrapper.vm.tour.state.currentStep?.id).toBe('s1')
+      expect(wrapper.vm.tour.state.isLastStep).toBe(true)
+
+      wrapper.vm.tour.next()
+      await nextTick()
+      expect(wrapper.vm.tour.state.status).toBe('completed')
+      expect(onComplete).toHaveBeenCalledOnce()
+    })
+
+    it('does not start when every target is unresolved and skipping is on', async () => {
+      const wrapper = mount(
+        createTestComponent(
+          [
+            { id: 'g1', target: '#nope1', content: '1' },
+            { id: 'g2', target: '#nope2', content: '2' },
+          ],
+          { skipMissingTargets: true }
+        )
+      )
+
+      wrapper.vm.tour.start()
+      await nextTick()
+      expect(wrapper.vm.tour.state.status).toBe('idle')
+    })
+
+    it('skips optional unresolved steps when going backwards', async () => {
+      const wrapper = mount(
+        createTestComponent([
+          { id: 's1', target: '#test-target', content: '1' },
+          { id: 'ghost', target: '#nope', content: 'Ghost', optional: true },
+          { id: 's3', target: '#test-target', content: '3' },
+        ])
+      )
+
+      wrapper.vm.tour.start(2)
+      await nextTick()
+      expect(wrapper.vm.tour.state.currentStep?.id).toBe('s3')
+
+      wrapper.vm.tour.previous()
+      await nextTick()
+      expect(wrapper.vm.tour.state.currentStep?.id).toBe('s1')
+    })
+  })
 })
