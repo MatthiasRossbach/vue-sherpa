@@ -45,6 +45,14 @@ export interface UseOverlayReturn {
  * Inspired by Driver.js overlay implementation.
  * @see https://github.com/kamranahmedse/driver.js/blob/master/src/overlay.ts
  */
+/**
+ * Full-viewport rectangle path (clockwise). Used as the outer ring of the
+ * spotlight and, on its own, as the plain dim when there is no cutout to punch.
+ */
+function viewportRectPath(viewportWidth: number, viewportHeight: number): string {
+  return `M${viewportWidth},0 L0,0 L0,${viewportHeight} L${viewportWidth},${viewportHeight} L${viewportWidth},0 Z`
+}
+
 function generateOverlayPath(
   viewportWidth: number,
   viewportHeight: number,
@@ -60,7 +68,7 @@ function generateOverlayPath(
 
   // Outer path: full viewport rectangle (clockwise)
   // This covers the entire viewport
-  const outer = `M${viewportWidth},0 L0,0 L0,${viewportHeight} L${viewportWidth},${viewportHeight} L${viewportWidth},0 Z`
+  const outer = viewportRectPath(viewportWidth, viewportHeight)
 
   // Inner path: rounded rectangle cutout (counter-clockwise)
   // Using SVG arc commands for rounded corners
@@ -144,16 +152,33 @@ export function useOverlay(): UseOverlayReturn {
     const { padding, radius } = currentOptions
     const { innerWidth: viewportW, innerHeight: viewportH } = window
 
-    // Calculate cutout bounds with padding
-    // Clamp to viewport to prevent negative dimensions
-    const x = Math.max(0, targetRect.x - padding)
-    const y = Math.max(0, targetRect.y - padding)
-    const width = Math.max(0, Math.min(targetRect.width + padding * 2, viewportW - x))
-    const height = Math.max(0, Math.min(targetRect.height + padding * 2, viewportH - y))
+    // Cutout bounds in viewport coordinates. Do NOT clamp the position to the
+    // viewport: the hole must stay glued to its element as the page scrolls,
+    // including when the element moves partially or fully past the top edge.
+    // The old `Math.max(0, …)` clamp pinned the cutout to the top-left corner
+    // once the target scrolled above the viewport — so scrolling DOWN detached
+    // the highlight while scrolling back UP re-attached it. SVG renders
+    // off-viewport / negative coordinates correctly (the overlay clips them),
+    // so the true rect is passed straight through.
+    const x = targetRect.x - padding
+    const y = targetRect.y - padding
+    const width = targetRect.width + padding * 2
+    const height = targetRect.height + padding * 2
 
-    // Skip if element is completely outside viewport
-    if (width <= 0 || height <= 0) {
-      path.value = ''
+    // When the element is COMPLETELY outside the viewport there is no hole to
+    // punch — but the dim must REMAIN (the tour is still active). Draw the
+    // plain full-viewport rectangle so the screen stays dimmed without a
+    // spotlight, rather than clearing the path (which removed the overlay
+    // entirely once the target scrolled off screen).
+    const fullyOutside =
+      width <= 0 ||
+      height <= 0 ||
+      x + width <= 0 ||
+      y + height <= 0 ||
+      x >= viewportW ||
+      y >= viewportH
+    if (fullyOutside) {
+      path.value = viewportRectPath(viewportW, viewportH)
       return
     }
 

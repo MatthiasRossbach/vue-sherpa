@@ -1,8 +1,13 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick, reactive } from 'vue'
 import { SherpaNuxtUI } from './index'
-import type { TourState, TourControls, TourOptions } from '../../core/types'
+import type {
+  TourState,
+  TourControls,
+  TourOptions,
+  PopoverPlacement,
+} from '../../core/types'
 
 describe('SherpaNuxtUI', () => {
   const createMockState = (overrides: Partial<TourState> = {}): TourState =>
@@ -161,6 +166,75 @@ describe('SherpaNuxtUI', () => {
     const path = document.querySelector('.sherpa-overlay-svg path')
     expect(path?.getAttribute('fill-rule')).toBe('evenodd')
     wrapper.unmount()
+  })
+
+  describe('popover horizontal positioning', () => {
+    const POPOVER_WIDTH = 360
+    const origWidth = window.innerWidth
+    const setViewport = (w: number) => {
+      window.innerWidth = w
+    }
+    afterEach(() => setViewport(origWidth))
+
+    const mountAt = (rect: Partial<DOMRect>, placement?: PopoverPlacement) =>
+      mount(SherpaNuxtUI, {
+        props: {
+          state: activeState({
+            currentStep: {
+              id: 'step1',
+              target: '#test',
+              content: 'Body',
+              title: 'Title',
+              ...(placement ? { placement } : {}),
+            },
+            targetRect: { x: rect.left, y: 0, width: 0, height: 40, ...rect } as DOMRect,
+          }),
+          controls: createMockControls(),
+          options: createMockOptions(),
+        },
+        attachTo: document.body,
+      })
+
+    it('left-aligns the popover to a target in the left half', async () => {
+      setViewport(1024)
+      const wrapper = mountAt({ left: 40, width: 120 })
+      await nextTick()
+      const popover = document.querySelector('.sherpa-popover') as HTMLElement
+      expect(popover.style.left).toBe('40px')
+      wrapper.unmount()
+    })
+
+    it('opens leftward for a target in the right half (no overflow)', async () => {
+      setViewport(1024)
+      const wrapper = mountAt({ left: 820, width: 120 }) // targetRight = 940
+      await nextTick()
+      const popover = document.querySelector('.sherpa-popover') as HTMLElement
+      const left = parseFloat(popover.style.left)
+      // Right edge anchored to the target's right → stays on screen.
+      expect(left + POPOVER_WIDTH).toBeLessThanOrEqual(1024 - 12)
+      expect(left).toBe(940 - POPOVER_WIDTH)
+      wrapper.unmount()
+    })
+
+    it('honours an explicit -start placement on a right-half target', async () => {
+      setViewport(1024)
+      const wrapper = mountAt({ left: 700, width: 120 }, 'bottom-start')
+      await nextTick()
+      const popover = document.querySelector('.sherpa-popover') as HTMLElement
+      // Forced left-anchor, then clamped so it cannot overflow the right edge.
+      const maxLeft = 1024 - POPOVER_WIDTH - 12
+      expect(parseFloat(popover.style.left)).toBe(Math.min(700, maxLeft))
+      wrapper.unmount()
+    })
+
+    it('never overflows the left edge on a narrow viewport', async () => {
+      setViewport(360)
+      const wrapper = mountAt({ left: 300, width: 40 })
+      await nextTick()
+      const popover = document.querySelector('.sherpa-popover') as HTMLElement
+      expect(parseFloat(popover.style.left)).toBeGreaterThanOrEqual(12)
+      wrapper.unmount()
+    })
   })
 
   it('applies passthrough data-testids for E2E hooks', async () => {

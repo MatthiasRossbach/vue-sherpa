@@ -181,7 +181,26 @@ export const SherpaNuxtUI = defineComponent({
       }
       const placement = props.state.currentStep?.placement ?? 'bottom'
       const margin = 12
-      const left = `${Math.max(margin, rect.left)}px`
+      const viewportW = window.innerWidth
+      // Effective popover width mirrors the render style below: 360px capped
+      // at 100vw - 2rem (32px).
+      const popoverWidth = Math.min(360, viewportW - 32)
+
+      // Horizontal anchor. Default aligns the popover's left edge to the
+      // target's left. A `-end` placement (or a target sitting past the
+      // viewport midpoint, e.g. a header pill on mobile) anchors the right
+      // edges instead, so the popover opens leftward and stays on screen.
+      // `-start` forces left-anchoring. This honours the `-start`/`-end`
+      // placement suffixes that were previously defined but ignored.
+      const targetRight = rect.left + rect.width
+      let anchorEnd = targetRight - rect.width / 2 > viewportW / 2
+      if (placement.endsWith('-start')) anchorEnd = false
+      if (placement.endsWith('-end')) anchorEnd = true
+
+      const rawLeft = anchorEnd ? targetRight - popoverWidth : rect.left
+      // Final clamp guarantees no overflow regardless of the chosen anchor.
+      const maxLeft = viewportW - popoverWidth - margin
+      const left = `${Math.max(margin, Math.min(rawLeft, maxLeft))}px`
       if (placement.startsWith('top')) {
         return { bottom: `${window.innerHeight - rect.top + margin}px`, left }
       }

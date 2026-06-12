@@ -198,17 +198,38 @@ describe('useOverlay', () => {
 
       show({ x: 0, y: 100, width: 200, height: 50 } as DOMRect, { padding: 8 })
 
-      // X should be clamped to 0, not negative
-      expect(path.value).toMatch(/M\d+,\d+/) // Should still generate valid path
+      // Position is NOT clamped — the cutout tracks the element, so padding
+      // pushes the left edge slightly negative (x - padding = -8). The outer
+      // viewport rect keeps the overall path valid.
+      expect(path.value).toContain('M1024,0')
+      expect(path.value).toContain('-4,92') // inner start: x - padding + radius
     })
 
-    it('should handle element at viewport edge (top)', () => {
-      const { path, show } = useOverlay()
+    it('should keep the cutout glued to the element as it scrolls above the top', () => {
+      const { path, show, refresh } = useOverlay()
 
-      show({ x: 100, y: 0, width: 200, height: 50 } as DOMRect, { padding: 8 })
+      // Element on screen, then scrolled up so its top passes the viewport edge.
+      show({ x: 100, y: 40, width: 200, height: 50 } as DOMRect, { padding: 8 })
+      refresh({ x: 100, y: -30, width: 200, height: 50 } as DOMRect, { padding: 8 })
 
-      // Y should be clamped to 0
-      expect(path.value).toMatch(/M\d+,\d+/)
+      // y - padding = -38 → the hole follows the element upward (negative y)
+      // instead of pinning to the top edge (the pre-fix bug).
+      expect(path.value).toContain(',-38')
+      expect(path.value).not.toBe('')
+    })
+
+    it('should keep the dim (no cutout) when the element is completely off screen', () => {
+      const { path, show, refresh } = useOverlay()
+
+      show({ x: 100, y: 100, width: 200, height: 50 } as DOMRect, { padding: 8 })
+      // Scrolled far past the top: bottom edge (y + height + padding) < 0.
+      refresh({ x: 100, y: -400, width: 200, height: 50 } as DOMRect, { padding: 8 })
+
+      // The dim REMAINS — full-viewport rect only, with a single Z (no inner
+      // cutout). Clearing the path here would make the whole overlay vanish.
+      expect(path.value).not.toBe('')
+      expect(path.value).toContain('M1024,0')
+      expect((path.value.match(/Z/g) || []).length).toBe(1)
     })
 
     it('should handle element extending beyond viewport', () => {
@@ -216,8 +237,9 @@ describe('useOverlay', () => {
 
       show({ x: 900, y: 700, width: 200, height: 100 } as DOMRect, { padding: 8 })
 
-      // Should still generate valid path (width/height clamped)
-      expect(path.value).toMatch(/M\d+,\d+/)
+      // Still partly visible → a valid path that tracks the true position.
+      expect(path.value).toContain('M1024,0')
+      expect(path.value).not.toBe('')
     })
   })
 })
